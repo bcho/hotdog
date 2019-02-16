@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+from hashlib import sha1
 import typing as T
 
 import aiohttp
@@ -20,7 +21,8 @@ class Image:
 
     def get_image_name(self) -> str:
         p = self.url.split('/')[-1].replace('-', '_')
-        return f'{self.category}-{p}'
+        h = sha1(self.url.encode('u8')).hexdigest()[:8]
+        return f'{self.category}-{h}-{p}'
 
 
 async def fetch_imagenet_index(
