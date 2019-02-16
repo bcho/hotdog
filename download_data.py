@@ -1,5 +1,6 @@
 import dataclasses
 from hashlib import sha1
+from multiprocessing import Pool
 import typing as T
 
 import requests
@@ -79,6 +80,7 @@ IMAGENET_INDICES = [
 
 
 def download_index(
+    request_pool: Pool,
     config: Config,
     url: str,
     category: str,
@@ -92,15 +94,22 @@ def download_index(
         f.write(content)
 
     for image in images:
-        fetch_image(config, image)
+        request_pool.apply_async(
+            fetch_image,
+            args=(config, image),
+        )
 
 
 def main():
     config = Config
     config.ensure_data_paths()
 
-    for url, category in IMAGENET_INDICES:
-        download_index(config, url, category)
+    with Pool(10) as request_pool:
+        for url, category in IMAGENET_INDICES:
+            download_index(request_pool, config, url, category)
+
+        request_pool.close()
+        request_pool.join()
 
 
 if __name__ == '__main__':
