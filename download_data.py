@@ -1,9 +1,8 @@
-import asyncio
 import dataclasses
 from hashlib import sha1
 import typing as T
 
-import aiohttp
+import requests
 
 from hotdog.logging import make_logger
 from hotdog.config import Config
@@ -24,25 +23,24 @@ class Image:
         return f'{self.category}-{h}'
 
 
-async def fetch_imagenet_index(
-    session: aiohttp.ClientSession,
+def fetch_imagenet_index(
     url: str,
     category: str,
 ) -> T.List[Image]:
     logger.debug(f'fetching imagenet index {url}')
 
-    async with session.get(url) as resp:
-        d = await resp.text()
+    resp = requests.get(url)
+    resp.raise_for_status()
+    d = resp.text
 
-        return [
-            Image(category=category, url=url.strip())
-            for url in d.split('\n')
-            if url.strip()
-        ]
+    return [
+        Image(category=category, url=url.strip())
+        for url in d.split('\n')
+        if url.strip()
+    ]
 
 
-async def fetch_image(
-    session: aiohttp.ClientSession,
+def fetch_image(
     config: Config,
     image: Image,
 ):
@@ -50,13 +48,13 @@ async def fetch_image(
 
     image_path = config.get_image_path(image.get_image_name())
     try:
-        image_timeout = aiohttp.ClientTimeout(total=30)
-        async with session.get(image.url, timeout=image_timeout) as resp:
-            if not resp.content_type.startswith('image'):
-                return
-            with open(image_path, 'wb') as f:
-                    f.write(await resp.read())
-                    logger.debug(f'saved image: {image.url} {image_path}')
+        resp = requests.get(image.url, timeout=10)
+        resp.raise_for_status()
+        if not resp.headers['content-type'].startswith('image'):
+            return
+        with open(image_path, 'wb') as f:
+                f.write(resp.content)
+                logger.debug(f'saved image: {image.url} {image_path}')
     except Exception as e:
         logger.error(f'download failed: {image.url}')
         logger.error(e)
@@ -80,13 +78,12 @@ IMAGENET_INDICES = [
 ]
 
 
-async def download_index(
-    session: aiohttp.ClientSession,
+def download_index(
     config: Config,
     url: str,
     category: str,
 ):
-    images = await fetch_imagenet_index(session, url, category)
+    images = fetch_imagenet_index(url, category)
 
     image_index_path = config.get_image_path(f'{category}.txt')
     with open(image_index_path, 'w') as f:
@@ -94,26 +91,17 @@ async def download_index(
                             for i in images)
         f.write(content)
 
-    await asyncio.wait([
-        fetch_image(session, config, image)
-        for image in images
-    ])
+    for image in images:
+        fetch_image(config, image)
 
 
-async def main():
+def main():
     config = Config
     config.ensure_data_paths()
 
-    async with aiohttp.ClientSession(
-        raise_for_status=True,
-        timeout=aiohttp.ClientTimeout(total=None),
-    ) as session:
-        await asyncio.wait([
-            download_index(session, config, url, category)
-            for url, category in IMAGENET_INDICES
-        ])
+    for url, category in IMAGENET_INDICES:
+        download_index(config, url, category)
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    main()
