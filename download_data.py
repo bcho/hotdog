@@ -20,9 +20,8 @@ class Image:
     url: str
 
     def get_image_name(self) -> str:
-        p = self.url.split('/')[-1].replace('-', '_')
         h = sha1(self.url.encode('u8')).hexdigest()[:8]
-        return f'{self.category}-{h}-{p}'
+        return f'{self.category}-{h}'
 
 
 async def fetch_imagenet_index(
@@ -86,6 +85,12 @@ async def download_index(
     category: str,
 ):
     images = await fetch_imagenet_index(session, url, category)
+
+    image_index_path = config.get_image_path(f'{category}.txt')
+    with open(image_index_path, 'w') as f:
+        content = '\n'.join(' '.join(i.url, i.get_image_name())
+                            for i in images)
+        f.write(content)
 
     await asyncio.wait([
         fetch_image(session, config, image)
