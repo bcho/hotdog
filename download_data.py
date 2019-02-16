@@ -88,7 +88,7 @@ async def download_index(
 
     image_index_path = config.get_image_path(f'{category}.txt')
     with open(image_index_path, 'w') as f:
-        content = '\n'.join(' '.join(i.url, i.get_image_name())
+        content = '\n'.join(' '.join([i.url, i.get_image_name()])
                             for i in images)
         f.write(content)
 
