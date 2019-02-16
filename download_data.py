@@ -54,8 +54,11 @@ async def fetch_image(
     image_path = config.get_image_path(image.get_image_name())
     async with session.get(image.url) as resp:
         with open(image_path, 'wb') as f:
-            f.write(await resp.read())
-            logger.debug(f'saved image: {image_path}')
+            try:
+                f.write(await resp.read())
+                logger.debug(f'saved image: {image_path}')
+            except Exception as e:
+                logger.error(f'download failed: {image.url}', e)
 
 
 IMAGENET_INDICES = [
