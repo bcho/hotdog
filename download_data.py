@@ -32,8 +32,6 @@ async def fetch_imagenet_index(
     logger.debug(f'fetching imagenet index {url}')
 
     async with session.get(url) as resp:
-        resp.raise_for_status()
-
         d = await resp.text()
 
         return [
@@ -51,13 +49,17 @@ async def fetch_image(
     logger.debug(f'fetching image: {image.url}')
 
     image_path = config.get_image_path(image.get_image_name())
-    async with session.get(image.url) as resp:
-        with open(image_path, 'wb') as f:
-            try:
-                f.write(await resp.read())
-                logger.debug(f'saved image: {image_path}')
-            except Exception as e:
-                logger.error(f'download failed: {image.url}', e)
+    try:
+        image_timeout = aiohttp.ClientTimeout(total=30)
+        async with session.get(image.url, timeout=image_timeout) as resp:
+            if not resp.content_type.startswith('image'):
+                return
+            with open(image_path, 'wb') as f:
+                    f.write(await resp.read())
+                    logger.debug(f'saved image: {image.url} {image_path}')
+    except Exception as e:
+        logger.error(f'download failed: {image.url}')
+        logger.error(e)
 
 
 IMAGENET_INDICES = [
@@ -102,7 +104,10 @@ async def main():
     config = Config
     config.ensure_data_paths()
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(
+        raise_for_status=True,
+        timeout=aiohttp.ClientTimeout(total=None),
+    ) as session:
         await asyncio.wait([
             download_index(session, config, url, category)
             for url, category in IMAGENET_INDICES
