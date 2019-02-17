@@ -1,3 +1,4 @@
 venv
 data/image
 data/image.zip
+data/model/*.h5

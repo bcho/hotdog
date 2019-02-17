@@ -18,15 +18,15 @@ def is_image(p: str) -> bool:
     return bool(cv2.imread(p) is not None)
 
 
-def rotate_image(image, angle: int):
+def rotate_image(image, angle: T.Optional[int] = None):
+    if angle is None:
+        angle = np.random.randint(0, 360)
     rows, cols = image.shape[:2]
     M = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1)
     return cv2.warpAffine(image, M, (cols, rows))
 
 
 def normalize_image(image, image_size: T.Tuple[int, int]):
-    angle = np.random.randint(0, 360)
-    image = rotate_image(image, angle)
     image = cv2.blur(image, (5, 5))
     image = cv2.resize(image, image_size)
     image = exposure.equalize_hist(image)

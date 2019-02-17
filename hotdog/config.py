@@ -17,11 +17,16 @@ class Config:
         return path.join(cls.ROOT, 'data', 'image', *args)
 
     @classmethod
+    def get_model_path(cls, *args) -> str:
+        return path.join(cls.ROOT, 'data', 'model', *args)
+
+    @classmethod
     def ensure_data_paths(cls):
         """Create required data paths."""
         for p in (
                 cls.ROOT,
                 cls.get_image_path(),
+                cls.get_model_path(),
         ):
             logger.debug(f'creating data path: {p}')
             pathlib.Path(p).mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 from .config import Config
-from .image import normalize_image
+from .image import normalize_image, rotate_image
 
 
 @dataclasses.dataclass
@@ -105,8 +105,10 @@ def augment(
             i = i + 1
             if i >= count:
                 return
+        # augmented images
         while i < count:
-            yield from_images[np.random.randint(0, len(from_images))]
+            image = from_images[np.random.randint(0, len(from_images))]
+            yield rotate_image(image)
             i = i + 1
 
     return [
