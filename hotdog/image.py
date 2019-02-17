@@ -3,6 +3,7 @@
 import typing as T
 
 import cv2
+from skimage import exposure
 import numpy as np
 
 
@@ -18,7 +19,7 @@ def is_image(p: str) -> bool:
 
 
 def rotate_image(image, angle: int):
-    rows, cols, ch = image.shape
+    rows, cols = image.shape[:2]
     M = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1)
     return cv2.warpAffine(image, M, (cols, rows))
 
@@ -28,4 +29,5 @@ def normalize_image(image, image_size: T.Tuple[int, int]):
     image = rotate_image(image, angle)
     image = cv2.blur(image, (5, 5))
     image = cv2.resize(image, image_size)
+    image = exposure.equalize_hist(image)
     return image

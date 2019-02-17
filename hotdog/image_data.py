@@ -30,7 +30,8 @@ class Image:
         """
         if self.image_data is not None and not refresh:
             return self.image_data
-        self.image_data = cv2.imread(self.path)
+        # NOTE: convert to grayscale on reading
+        self.image_data = cv2.imread(self.path, cv2.IMREAD_GRAYSCALE)
         return self.image_data
 
     def show_image_data(self):
