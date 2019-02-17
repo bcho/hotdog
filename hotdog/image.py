@@ -30,4 +30,5 @@ def normalize_image(image, image_size: T.Tuple[int, int]):
     image = cv2.blur(image, (5, 5))
     image = cv2.resize(image, image_size)
     image = exposure.equalize_hist(image)
+    image = image.reshape(image.shape + (1, ))
     return image
