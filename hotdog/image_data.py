@@ -108,7 +108,11 @@ def augment(
         # augmented images
         while i < count:
             image = from_images[np.random.randint(0, len(from_images))]
-            yield rotate_image(image)
+            yield Image(
+                labels=image.labels,
+                path=image.path,
+                image_data=rotate_image(image.load_image_data()),
+            )
             i = i + 1
 
     return [
